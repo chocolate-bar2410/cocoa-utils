@@ -1,5 +1,17 @@
 local schema = {}
-local interface = {}
+local interface = setmetatable({},{
+    __index = function (self, index)
+        if(index == "one") then
+            return self.new(1,1)
+        elseif(index == "zero") then
+            return self.new(0,0)
+        end
+
+        return self[index]
+    end
+
+
+})
 
 ---@class vector
 ---@field X number
@@ -18,6 +30,7 @@ local interface = {}
 ---@field FuzzyEq fun(self : vector,other : vector,epsilon : number) : boolean
 ---@field Reflect fun(self : vector,normal : vector) : vector
 ---@field Unpack fun(self : vector) : number,number
+---@field Clone fun(self : vector) : vector
 local meta = {
     __index = function(self,index)
         if index == "Magnitude" then
@@ -45,20 +58,15 @@ interface.new = function(x,y)
     local vector = {}
     vector.X = x
     vector.Y = y
-    vector.Magnitude = nil -- for type annotations 
-    vector.Unit = nil      -- for type annotations 
+    vector.Magnitude = nil          -- for type annotations 
+    vector.Unit = nil               -- for type annotations 
     vector.Perpendicular = nil      -- for type annotations 
 
     return setmetatable(vector,meta)
 end
 
-interface.one = function()
-    return interface.new(1,1)
-end
-
-interface.zero = function()
-    return interface.new(0,0)
-end
+interface.one = nil
+interface.zero = nil
 
 interface.is_vector2 = function(vector)
     return getmetatable(vector) == meta
@@ -160,6 +168,14 @@ end
 function schema:Unpack()
     return self.X,self.Y
 end
+
+---returns a clone of a vector
+---@param self vector
+---@return vector
+function schema:Clone()
+    return interface.new(self.X,self.Y)
+end
+
 
 --#endregion
 
