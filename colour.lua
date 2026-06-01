@@ -9,6 +9,7 @@ local schema = {}
 ---@field ToHex fun(self : colour): string
 ---@field ToHSV fun(self : colour): number,number,number
 ---@field Unpack fun(self : colour): number,number,number,number
+---@field Clone fun(self : colour): colour
 ---@field Invert fun(self : colour): colour
 ---@field HueInvert fun(self : colour): colour
 ---@field HSVGreyScale fun(self : colour): colour
@@ -16,6 +17,8 @@ local schema = {}
 ---@field Lerp fun(self : colour,other : colour,t : number): colour
 ---@field HSVLerp fun(self : colour,other : colour,t : number): colour
 ---@field HueShift fun(self : colour,hue : number): colour
+---@field SaturationShift fun(self : colour,hue : number): colour
+---@field BrightnessShift fun(self : colour,hue : number): colour
 local meta = {
     __index = schema,
     __tostring = function(self)
@@ -119,7 +122,7 @@ end
 
 --#endregion
 
---#region methods
+--#region util methods
 
 ---returns a hex string
 ---@param self colour
@@ -158,12 +161,10 @@ function schema:ToHSV()
     hue = hue * 60
     if hue < 0 then hue = hue + 360 end
 
-    hue = math.ceil(hue)
-
     return hue, saturation, value
 end
 
----returns values for hue, saturation and value
+---returns RGBA values from 0 - 1
 ---@param self colour
 ---@return number r
 ---@return number g
@@ -172,6 +173,16 @@ end
 function schema:Unpack()
     return self.R,self.G,self.B,self.A
 end
+
+---returns a copy of the colour
+---@param self colour
+---@return colour
+function schema:Clone()
+    return interface.new(self.R,self.G,self.B,self.A)
+end
+
+--#endregion
+--#region transformations
 
 ---returns a inverted version of the original colour
 ---@param self colour
@@ -203,6 +214,9 @@ function schema:Luminance()
     local luminance = 0.2126 * self.R + 0.7152 * self.G + 0.0722 * self.B
     return interface.new(luminance,luminance,luminance,self.A)
 end
+
+--#endregion
+--#region interpolation
 
 ---interpolates between 2 colours and returns the result
 ---@param other colour
@@ -237,14 +251,27 @@ function schema:HSVLerp(other,t)
     return interface.fromHSVA(H,S,V,A)
 end
 
+--#endregion
+--#region HSV shifts
+
 function schema:HueShift(hue)
     local H,S,V = self:ToHSV()
     return interface.fromHSVA((H + hue) % 360,S,V,self.A)
 end
 
+function schema:SaturationShift(saturation)
+    local H,S,V = self:ToHSV()
+    return interface.fromHSVA(H,S + saturation,V,self.A)
+end
+
+function schema:BrightnessShift(brightness)
+    local H,S,V = self:ToHSV()
+    return interface.fromHSVA(H,S,V + brightness,self.A)
+end
+
+
 
 --#endregion
-
 --#region metamethods
 
 meta.__add = function(self,other)
@@ -276,16 +303,16 @@ end
 
 meta.__div = function(self,other)
     return interface.new(
-        self.R * other.alpha / other.R,
-        self.G * other.alpha / other.G,
-        self.B * other.alpha / other.B,
+        self.R * other.A / other.R,
+        self.G * other.A / other.G,
+        self.B * other.A / other.B,
         self.A
     )
 end
 
 
 
---#region
+--#endregion
 
 
 return interface
