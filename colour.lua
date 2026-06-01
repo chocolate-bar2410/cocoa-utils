@@ -9,6 +9,12 @@ local schema = {}
 ---@field ToHex fun(self : colour): string
 ---@field ToHSV fun(self : colour): number,number,number
 ---@field Unpack fun(self : colour): number,number,number,number
+---@field Invert fun(self : colour): colour
+---@field HueInvert fun(self : colour): colour
+---@field HSVGreyScale fun(self : colour): colour
+---@field Luminance fun(self : colour): colour
+---@field Lerp fun(self : colour,other : colour): colour
+---@field HSVLerp fun(self : colour,other : colour): colour
 local meta = {
     __index = schema,
     __tostring = function(self)
@@ -158,6 +164,37 @@ end
 ---@return number a
 function schema:Unpack()
     return self.R,self.G,self.B,self.A
+end
+
+---returns a inverted version of the original colour
+---@param self colour
+---@return colour
+function schema:Invert()
+    return interface.new(1 - self.R,1 - self.G,1 - self.B,self.A)
+end
+
+---returns a version of the original colour with the hue inverted
+---@param self colour
+---@return colour
+function schema:HueInvert()
+    local hue,saturation,value = self:ToHSV()
+    return interface.fromHSVA(360 - hue,saturation,value,self.A)
+end
+
+---returns a greyscale version of the original colour using HSV
+---@param self colour
+---@return colour
+function schema:HSVGreyScale()
+    local hue,saturation,value = self:ToHSV()
+    return interface.fromHSVA(hue,0,value,self.A)
+end
+
+---returns a greyscale colour representing luminance
+---@param self colour
+---@return colour
+function schema:Luminance()
+    local luminance = 0.2126 * self.R + 0.7152 * self.G + 0.0722 * self.B
+    return interface.new(luminance,luminance,luminance,self.A)
 end
 
 
