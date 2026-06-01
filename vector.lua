@@ -68,7 +68,7 @@ end
 interface.one = nil
 interface.zero = nil
 
-interface.is_vector2 = function(vector)
+interface.IsVector = function(vector)
     return getmetatable(vector) == meta
 end
 
@@ -182,15 +182,15 @@ end
 --#region metamethods
 
 local function binary_op(self,other,callback)
-    if(interface.is_vector2(self) and interface.is_vector2(other)) then
+    if(interface.IsVector(self) and interface.IsVector(other)) then
         return interface.new(callback(self.X,other.X),callback(self.Y,other.Y))
     end
 
-    if(interface.is_vector2(self) and tonumber(other)) then
+    if(interface.IsVector(self) and tonumber(other)) then
         return interface.new(callback(self.X,other),callback(self.Y,other))
     end
 
-    if(interface.is_vector2(other) and tonumber(self)) then
+    if(interface.IsVector(other) and tonumber(self)) then
         return interface.new(callback(self,other.X),callback(self,other.Y))
     end
 
