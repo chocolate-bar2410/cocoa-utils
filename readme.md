@@ -7,3 +7,7 @@ W.I.P atm
 
 libraries:
 - 2d vector math library
+- colour library
+    - HSV & OKLCH
+    - colour math
+    - colour palletes
