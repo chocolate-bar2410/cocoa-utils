@@ -21,7 +21,7 @@ local schema = {}
 ---@field SaturationShift fun(self : colour,hue : number): colour
 ---@field BrightnessShift fun(self : colour,hue : number): colour
 ---@field Complementary fun(self : colour): colour
----@field Analogous fun(self : colour,count : number): colour[]
+---@field Analogous fun(self : colour,layer : number): colour[]
 ---@field Triadic fun(self : colour): colour,colour
 ---@field SplitComplmentary fun(self : colour): colour,colour
 local meta = {
@@ -40,7 +40,7 @@ local function toSRGB(c)
     if c <= 0.0031308 then
         return 12.92 * c
     else
-        return 1.055 * (c ^ 1/2.4) - 0.055
+        return 1.055 * (c ^ (1/2.4)) - 0.055
     end
 end
 
@@ -49,6 +49,27 @@ local function toLinearRGB(c)
         return c / 12.92
     else
         return ((c + 0.055) / 1.055) ^ 2.4
+    end
+end
+
+local function adaptiveHueShift(H, C, baseShift)
+    local Cmax = 0.32
+    local factor = math.exp(-2 * (C / Cmax))
+    return (H + baseShift * factor) % 360
+end
+
+
+local function atan2(y, x)
+    if x > 0 then
+        return math.atan(y / x)
+    elseif x < 0 then
+        return math.atan(y / x) + (y >= 0 and math.pi or -math.pi)
+    elseif y > 0 then
+        return math.pi / 2
+    elseif y < 0 then
+        return -math.pi / 2
+    else
+        return 0
     end
 end
 
@@ -150,7 +171,7 @@ end
 interface.fromOKLCH = function(lightness, chroma, hue, alpha)
     
     lightness = clamp(lightness,0,1)
-    chroma = clamp(chroma,0,0.37)
+    chroma = math.max(chroma,0)
     hue = clamp(hue,0,360)
 
     hue = math.rad(hue)
@@ -165,15 +186,15 @@ interface.fromOKLCH = function(lightness, chroma, hue, alpha)
     m = m * m * m
     s = s * s * s
 
-    local r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
-    local g = 1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
-    local b = 0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    local R = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    local G = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    local B = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
 
-    r = toSRGB(r)
-    g = toSRGB(g)
-    b = toSRGB(b)
+    R = toSRGB(R)
+    G = toSRGB(G)
+    B = toSRGB(B)
 
-    return interface.new(r,g,b,alpha)
+    return interface.new(R,G,B,alpha)
 end
 
 --#endregion
@@ -231,16 +252,17 @@ function schema:ToOKLCH()
     local g = toLinearRGB(self.G)
     local b = toLinearRGB(self.B)
 
-    local l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    local m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    local s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    local l = (0.4122214708*r + 0.5363325363*g + 0.0514459929*b) ^ (1/3)
+    local m = (0.2119034982*r + 0.6806995451*g + 0.1073969566*b) ^ (1/3)
+    local s = (0.0883024619*r + 0.2817188376*g + 0.6299787005*b) ^ (1/3)
 
-    local a = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s 
-    local b = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s 
-    local lightness = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s 
+    local lightness = 0.2104542553*l + 0.7936177850*m - 0.0040720468*s
+    local A = 1.9779984951*l - 2.4285922050*m + 0.4505937099*s
+    local B = 0.0259040371*l + 0.7827717662*m - 0.8086757660*s
 
-    local chroma = math.sqrt(a * a + b * b)
-    local hue = math.deg(math.atan(b,a))
+    local chroma = math.sqrt(A * A + B * B)
+    local hue = math.deg(atan2(B,A))
+    if hue < 0 then hue = hue + 360 end 
 
     return lightness, chroma, hue
 end
@@ -352,6 +374,35 @@ end
 
 --#endregion
 --#region colour pallets
+
+---returns the complementary colour
+---@param self colour
+---@return colour
+function schema:Complementary()
+    local L,C,H = self:ToOKLCH()
+    return interface.fromOKLCH(L,C,(H + 180) % 360,self.A)
+end
+
+---returns analogous colours
+---@param self colour
+---@param layer number
+---@return colour[]
+function schema:Analogous(layer)
+    local L,C,H = self:ToOKLCH()
+    
+    local pallete = {}
+    local inc = 60
+    local angle = -inc * layer
+
+    for i = 1, layer * 2 + 1 do
+        local hue = adaptiveHueShift(H,C,angle)
+        table.insert(pallete,interface.fromOKLCH(L,C,hue,self.A))
+        angle = angle + inc
+    end
+
+    return pallete
+
+end
 
 
 --#endregion
