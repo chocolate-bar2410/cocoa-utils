@@ -8,6 +8,7 @@ local schema = {}
 ---@field A number
 ---@field ToHex fun(self : colour): string
 ---@field ToHSV fun(self : colour): number,number,number
+---@field ToOKLCH fun(self : colour): number,number,number
 ---@field Unpack fun(self : colour): number,number,number,number
 ---@field Clone fun(self : colour): colour
 ---@field Invert fun(self : colour): colour
@@ -19,6 +20,10 @@ local schema = {}
 ---@field HueShift fun(self : colour,hue : number): colour
 ---@field SaturationShift fun(self : colour,hue : number): colour
 ---@field BrightnessShift fun(self : colour,hue : number): colour
+---@field Complementary fun(self : colour): colour
+---@field Analogous fun(self : colour,count : number): colour[]
+---@field Triadic fun(self : colour): colour,colour
+---@field SplitComplmentary fun(self : colour): colour,colour
 local meta = {
     __index = schema,
     __tostring = function(self)
@@ -29,6 +34,22 @@ local meta = {
 local function clamp(x,min,max) 
     if x == nil then return max end
     return math.min(math.max(x,min),max) 
+end
+
+local function toSRGB(c)
+    if c <= 0.0031308 then
+        return 12.92 * c
+    else
+        return 1.055 * (c ^ 1/2.4) - 0.055
+    end
+end
+
+local function toLinearRGB(c)
+    if c <= 0.04045 then
+        return c / 12.92
+    else
+        return ((c + 0.055) / 1.055) ^ 2.4
+    end
 end
 
 --#region constructors
@@ -120,6 +141,41 @@ interface.fromHSVA = function(hue, saturation, value, alpha)
     return interface.new(0,0,0,0)
 end
 
+---comment
+---@param lightness number
+---@param chroma number
+---@param hue number
+---@param alpha number
+---@return colour
+interface.fromOKLCH = function(lightness, chroma, hue, alpha)
+    
+    lightness = clamp(lightness,0,1)
+    chroma = clamp(chroma,0,0.37)
+    hue = clamp(hue,0,360)
+
+    hue = math.rad(hue)
+    local a = chroma * math.cos(hue)
+    local b = chroma * math.sin(hue)
+
+    local l = (lightness + 0.3963377774 * a + 0.2158037573 * b)
+    local m = (lightness - 0.1055613458 * a - 0.0638541728 * b)
+    local s = (lightness - 0.0894841775 * a - 1.2914855480 * b)
+
+    l = l * l * l
+    m = m * m * m
+    s = s * s * s
+
+    local r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    local g = 1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    local b = 0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+    r = toSRGB(r)
+    g = toSRGB(g)
+    b = toSRGB(b)
+
+    return interface.new(r,g,b,alpha)
+end
+
 --#endregion
 
 --#region util methods
@@ -131,7 +187,7 @@ function schema:ToHex()
     return string.format("#%02X%02X%02X",self.R * 255,self.G * 255,self.B * 255)
 end
 
----returns values for hue, saturation and value
+---returns the hue, saturation and value of a colour
 ---@param self colour
 ---@return number hue
 ---@return number saturation
@@ -162,6 +218,31 @@ function schema:ToHSV()
     if hue < 0 then hue = hue + 360 end
 
     return hue, saturation, value
+end
+
+
+---returns lightness, chroma and hue of a colour
+---@param self colour
+---@return number
+---@return number
+---@return number
+function schema:ToOKLCH()
+    local r = toLinearRGB(self.R)
+    local g = toLinearRGB(self.G)
+    local b = toLinearRGB(self.B)
+
+    local l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    local m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    local s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+
+    local a = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s 
+    local b = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s 
+    local lightness = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s 
+
+    local chroma = math.sqrt(a * a + b * b)
+    local hue = math.deg(math.atan(b,a))
+
+    return lightness, chroma, hue
 end
 
 ---returns RGBA values from 0 - 1
@@ -269,6 +350,8 @@ function schema:BrightnessShift(brightness)
     return interface.fromHSVA(H,S,V + brightness,self.A)
 end
 
+--#endregion
+--#region colour pallets
 
 
 --#endregion
