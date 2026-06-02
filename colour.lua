@@ -167,7 +167,7 @@ end
 interface.fromHex = function(hexstring)
     hexstring = hexstring:gsub("^#","")
 
-    if type(hexstring) ~= "string" or hexstring:find("[^0-9A-Fa-f]", 2) then
+    if type(hexstring) ~= "string" or hexstring:find("[^0-9A-Fa-f]") then
         error(tostring(hexstring) .. " is an invalid hex string")
     end
 
@@ -511,7 +511,7 @@ end
 --#endregion
 --#region metamethods
 
----comment
+---applies binary op for metamethods
 ---@param self any
 ---@param other any
 ---@param callback fun(a : number, b : number): number
@@ -519,11 +519,11 @@ end
 ---@return colour
 local binary_op = function(self,other,callback,includealpha)
 
-    if(interface.isColour(self) or type(self) ~= "number") then
+    if(not interface.isColour(self) and type(self) ~= "number") then
         error(("tried to do operation between %s and %s"):format(type(self),type(other)))
     end
 
-    if(interface.isColour(self) or type(self) ~= "number") then
+    if(not interface.isColour(other) and type(other) ~= "number") then
         error(("tried to do operation between %s and %s"):format(type(self),type(other)))
     end
 
@@ -534,7 +534,7 @@ local binary_op = function(self,other,callback,includealpha)
         callback(colourA.R,colourB.R),
         callback(colourA.G,colourB.G),
         callback(colourA.B,colourB.B),
-        includealpha and callback(colourA.A,colourB.A) or colourA
+        includealpha and callback(colourA.A,colourB.A) or colourA.A
     )
 
 end
@@ -552,13 +552,13 @@ meta.__sub = function(self,other)
 end
 
 meta.__mul = function(self,other)
-    local colour = binary_op(self,other,function(a,b)
+    return binary_op(self,other,function(a,b)
         return a * b
     end,true)
 end
 
 meta.__div = function(self,other)
-    local colour = binary_op(self,other,function(a,b)
+    return binary_op(self,other,function(a,b)
         return a / b
     end)
 end
