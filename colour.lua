@@ -23,7 +23,7 @@ local schema = {}
 ---@field Complementary fun(self : colour): colour
 ---@field Analogous fun(self : colour,layer : number): colour[]
 ---@field Triadic fun(self : colour): colour,colour
----@field SplitComplmentary fun(self : colour): colour,colour
+---@field SplitComplementary fun(self : colour): colour,colour
 local meta = {
     __index = schema,
     __tostring = function(self)
@@ -154,18 +154,23 @@ end
 
 ---creates a colour from a hex string and alpha value from 0 - 1
 ---@param hexstring string
----@param alpha number
+---@param alpha number?
 ---@return colour
 interface.fromHex = function(hexstring,alpha)
-    if hexstring:sub(1,1) == "#" then
-        hexstring = hexstring:sub(2,hexstring:len())
+    hexstring = hexstring:gsub("^#","")
+
+    if type(hexstring) ~= "string" or hexstring:find("[^0-9A-Fa-f]", 2) then
+        error(tostring(hexstring) .. " is an invalid hex string")
     end
+
 
     local r = tonumber(hexstring:sub(1,2),16) / 255
     local g = tonumber(hexstring:sub(3,4),16) / 255
     local b = tonumber(hexstring:sub(5,6),16) / 255
 
-    return interface.new(r,g,b,alpha)
+    local a = hexstring:len() == 8 and tonumber(hexstring:sub(7,8),16) / 255 or alpha or 1
+
+    return interface.new(r,g,b,a)
 end
 
 ---creates a colour from rgba values from 0 - 255
@@ -423,15 +428,15 @@ end
 --#endregion
 --#region colour pallets
 
----returns the complementary colour
+---returns the complementary colour of the original colour
 ---@param self colour
 ---@return colour
 function schema:Complementary()
     local L,C,H = self:ToOKLCH()
-    return interface.fromOKLCH(L,C,(H + 180) % 360,self.A)
+    return interface.fromOKLCH(L,C,adaptiveHueShift(H,C,180),self.A)
 end
 
----returns analogous colours
+---returns analogous colours of the original colour
 ---@param self colour
 ---@param layer number
 ---@return colour[]
@@ -452,6 +457,27 @@ function schema:Analogous(layer)
 
 end
 
+---returns triadic colours of the original colour
+---@param self colour
+---@return colour
+---@return colour
+function schema:Triadic()
+    local L,C,H = self:ToOKLCH()
+
+    return interface.fromOKLCH(L,C,adaptiveHueShift(H,C,-120),self.A),
+           interface.fromOKLCH(L,C,adaptiveHueShift(H,C,120) ,self.A)
+end
+
+---returns the split complement of the original colour
+---@param self colour
+---@return colour
+---@return colour
+function schema:SplitComplementary()
+    local L,C,H = self:ToOKLCH()
+
+    return interface.fromOKLCH(L,C,adaptiveHueShift(H,C,-150),self.A),
+           interface.fromOKLCH(L,C,adaptiveHueShift(H,C,150) ,self.A)
+end
 
 --#endregion
 --#region metamethods
