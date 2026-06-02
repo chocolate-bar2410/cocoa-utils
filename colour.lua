@@ -31,6 +31,7 @@ local meta = {
     end
 }
 
+--#region helper functions
 local function clamp(x,min,max) 
     if x == nil then return max end
     return math.min(math.max(x,min),max) 
@@ -52,12 +53,17 @@ local function toLinearRGB(c)
     end
 end
 
-local function adaptiveHueShift(H, C, baseShift)
+local function adaptiveHueShift(H, C, baseshift)
     local Cmax = 0.32
     local factor = math.exp(-2 * (C / Cmax))
-    return (H + baseShift * factor) % 360
-end
+    local shift = baseshift * factor
 
+    if shift < 0 and (H >= 270 and H <= 315) then
+        shift = shift * 0.5 
+    end
+
+    return (H + shift) % 360
+end
 
 local function atan2(y, x)
     if x > 0 then
@@ -73,6 +79,56 @@ local function atan2(y, x)
     end
 end
 
+-- for OKLAB gamut clipping
+local function find_cusp(a,b)
+    local hr = atan2(b,a)
+
+    local l_cusp = 0.5 + 0.3 * math.cos(hr) - 0.09 * math.sin(hr)
+    local c_cusp = 0.3 + 0.1 * math.cos(hr) + 0.05 * math.sin(hr)
+
+    return l_cusp, c_cusp
+end
+
+local function oklab_clip(lightness,chroma,a,b)
+
+    local l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ^ 3
+    local m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ^ 3
+    local s = (lightness - 0.0894841775 * a - 1.2914855480 * b) ^ 3
+
+    local R = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    local G = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    local B = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+    if R >= 0 and R <= 1 and G >= 0 and G <= 1 and B >= 0 and B <= 1 then
+        return R,G,B
+    end
+
+    local l_cusp ,c_cusp  = find_cusp(a,b)
+
+    local t = 0
+    if lightness < l_cusp then
+        t = (lightness * c_cusp) / (chroma * l_cusp + lightness * (c_cusp - chroma))
+    else
+        t = ((1 - lightness) * c_cusp) / (chroma * (1 - l_cusp) + (1 - lightness) * (c_cusp - chroma))
+    end
+
+    t = clamp(t,0,1)
+
+    a = a * t
+    b = b * t
+
+    local l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ^ 3
+    local m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ^ 3
+    local s = (lightness - 0.0894841775 * a - 1.2914855480 * b) ^ 3
+
+    local R = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    local G = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    local B = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+
+    return R,G,B
+end
+
+--#endregion
 --#region constructors
 
 ---constructs a new colour
@@ -178,17 +234,7 @@ interface.fromOKLCH = function(lightness, chroma, hue, alpha)
     local a = chroma * math.cos(hue)
     local b = chroma * math.sin(hue)
 
-    local l = (lightness + 0.3963377774 * a + 0.2158037573 * b)
-    local m = (lightness - 0.1055613458 * a - 0.0638541728 * b)
-    local s = (lightness - 0.0894841775 * a - 1.2914855480 * b)
-
-    l = l * l * l
-    m = m * m * m
-    s = s * s * s
-
-    local R = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
-    local G = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
-    local B = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    local R,G,B = oklab_clip(lightness,chroma,a,b)
 
     R = toSRGB(R)
     G = toSRGB(G)
@@ -314,7 +360,7 @@ end
 ---@param self colour
 ---@return colour
 function schema:Luminance()
-    local luminance = 0.2126 * self.R + 0.7152 * self.G + 0.0722 * self.B
+    local luminance = 0.2126 * toLinearRGB(self.R) + 0.7152 * toLinearRGB(self.G) + 0.0722 * toLinearRGB(self.B)
     return interface.new(luminance,luminance,luminance,self.A)
 end
 
@@ -391,7 +437,7 @@ function schema:Analogous(layer)
     local L,C,H = self:ToOKLCH()
     
     local pallete = {}
-    local inc = 60
+    local inc = 30
     local angle = -inc * layer
 
     for i = 1, layer * 2 + 1 do
