@@ -512,9 +512,9 @@ end
 
 meta.__div = function(self,other)
     return interface.new(
-        self.R * other.A / other.R,
-        self.G * other.A / other.G,
-        self.B * other.A / other.B,
+        self.R / other.R,
+        self.G / other.G,
+        self.B / other.B,
         self.A
     )
 end
