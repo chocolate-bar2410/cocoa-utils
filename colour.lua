@@ -154,21 +154,22 @@ end
 
 ---creates a colour from a hex string and alpha value from 0 - 1
 ---@param hexstring string
----@param alpha number?
 ---@return colour
-interface.fromHex = function(hexstring,alpha)
+interface.fromHex = function(hexstring)
     hexstring = hexstring:gsub("^#","")
 
     if type(hexstring) ~= "string" or hexstring:find("[^0-9A-Fa-f]", 2) then
         error(tostring(hexstring) .. " is an invalid hex string")
     end
 
+    if hexstring:len() < 8 then
+        hexstring = hexstring .. ("F"):rep(8 - hexstring:len())
+    end
 
     local r = tonumber(hexstring:sub(1,2),16) / 255
     local g = tonumber(hexstring:sub(3,4),16) / 255
     local b = tonumber(hexstring:sub(5,6),16) / 255
-
-    local a = hexstring:len() == 8 and tonumber(hexstring:sub(7,8),16) / 255 or alpha or 1
+    local a = tonumber(hexstring:sub(7,8),16) / 255
 
     return interface.new(r,g,b,a)
 end
@@ -256,7 +257,7 @@ end
 ---@param self colour
 ---@return string
 function schema:ToHex()
-    return string.format("#%02X%02X%02X",self.R * 255,self.G * 255,self.B * 255)
+    return string.format("#%02X%02X%02X%02X",self.R * 255,self.G * 255,self.B * 255,self.A * 255)
 end
 
 ---returns the hue, saturation and value of a colour
@@ -518,6 +519,9 @@ meta.__div = function(self,other)
     )
 end
 
+meta.__call = function(self)
+    return self:Unpack()
+end
 
 
 --#endregion
