@@ -128,6 +128,10 @@ local function oklab_clip(lightness,chroma,a,b)
     return R,G,B
 end
 
+local function lerp(a,b,t)
+    return a + t * (b - a)
+end
+
 --#endregion
 --#region constructors
 
@@ -224,7 +228,7 @@ interface.fromHSVA = function(hue, saturation, value, alpha)
     return interface.new(0,0,0,0)
 end
 
----comment
+---creates a colour using lightness, chroma (0 - 0.2 or 0.37) and hue (0 - 360)
 ---@param lightness number
 ---@param chroma number
 ---@param hue number
@@ -380,10 +384,10 @@ end
 ---@param t number
 ---@return colour
 function schema:Lerp(other,t)
-    local R = self.R + t * (other.R - self.R)
-    local B = self.B + t * (other.B - self.B)
-    local G = self.G + t * (other.G - self.G)
-    local A = self.A + t * (other.A - self.A)
+    local R = lerp(self.R,other.R,t)
+    local G = lerp(self.G,other.G,t)
+    local B = lerp(self.B,other.B,t)
+    local A = lerp(self.A,other.A,t)
 
     return interface.new(R,G,B,A)
 end
@@ -398,12 +402,12 @@ function schema:HSVLerp(other,t)
 
 
     local H = ((H2 - H1 + 180) % 360) - 180
-    local S = S1 + t * (S2 - S1)
-    local V = V1 + t * (V2 - V1)
-
     H = (H1 + H * t) % 360
 
-    local A = self.A + t * (other.A - self.A)
+    local S = lerp(S1,S2,t)
+    local V = lerp(V1,V2,t)
+
+    local A = lerp(self.A,other.A,t)
 
     return interface.fromHSVA(H,S,V,A)
 end
