@@ -17,6 +17,7 @@ local schema = {}
 ---@field Luminance fun(self : colour): colour
 ---@field Lerp fun(self : colour,other : colour,t : number): colour
 ---@field HSVLerp fun(self : colour,other : colour,t : number): colour
+---@field OKLCHLerp fun(self : colour,other : colour,t : number): colour
 ---@field HueShift fun(self : colour,hue : number): colour
 ---@field SaturationShift fun(self : colour,hue : number): colour
 ---@field BrightnessShift fun(self : colour,hue : number): colour
@@ -410,6 +411,25 @@ function schema:HSVLerp(other,t)
     local A = lerp(self.A,other.A,t)
 
     return interface.fromHSVA(H,S,V,A)
+end
+
+---interpolates between 2 colours and returns the result using HSV
+---@param other colour
+---@param t number
+---@return colour
+function schema:OKLCHLerp(other,t)
+    local L1,C1,H1 = self:ToOKLCH()
+    local L2,C2,H2 = other:ToOKLCH()
+    
+    local L = lerp(L1,L2,t)
+    local C = lerp(C1,C2,t)
+
+    local H = ((H2 - H1 + 180) % 360) - 180
+    H = (H1 + H * t) % 360
+
+    local A = lerp(self.A,other.A,t)
+
+    return interface.fromOKLCH(L,C,H,A)
 end
 
 --#endregion
