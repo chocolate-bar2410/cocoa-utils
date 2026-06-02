@@ -361,6 +361,8 @@ end
 ---@return colour
 function schema:Luminance()
     local luminance = 0.2126 * toLinearRGB(self.R) + 0.7152 * toLinearRGB(self.G) + 0.0722 * toLinearRGB(self.B)
+    
+    luminance = toSRGB(luminance)
     return interface.new(luminance,luminance,luminance,self.A)
 end
 
