@@ -10,4 +10,5 @@ libraries:
 - colour library
     - HSV & OKLCH
     - colour math
-    - colour palletes
+    - colour pallete generation
+    - 42 predefined colours
