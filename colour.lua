@@ -81,7 +81,7 @@ local function atan2(y, x)
 end
 
 -- for OKLAB gamut clipping
-local function find_cusp(a,b)
+local function findCusp(a,b)
     local hr = atan2(b,a)
 
     local l_cusp = 0.5 + 0.3 * math.cos(hr) - 0.09 * math.sin(hr)
@@ -90,7 +90,7 @@ local function find_cusp(a,b)
     return l_cusp, c_cusp
 end
 
-local function oklab_clip(lightness,chroma,a,b)
+local function OKLABClip(lightness,chroma,a,b)
 
     local l = (lightness + 0.3963377774 * a + 0.2158037573 * b) ^ 3
     local m = (lightness - 0.1055613458 * a - 0.0638541728 * b) ^ 3
@@ -104,7 +104,7 @@ local function oklab_clip(lightness,chroma,a,b)
         return R,G,B
     end
 
-    local l_cusp ,c_cusp  = find_cusp(a,b)
+    local l_cusp ,c_cusp  = findCusp(a,b)
 
     local t = 0
     if lightness < l_cusp then
@@ -249,7 +249,7 @@ interface.fromOKLCH = function(lightness, chroma, hue, alpha)
     local a = chroma * math.cos(hue)
     local b = chroma * math.sin(hue)
 
-    local R,G,B = oklab_clip(lightness,chroma,a,b)
+    local R,G,B = OKLABClip(lightness,chroma,a,b)
 
     R = toSRGB(R)
     G = toSRGB(G)
