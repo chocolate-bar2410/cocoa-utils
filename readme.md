@@ -1,6 +1,6 @@
 # cocoa love2d utils
 
-just a collection of love2d libraries to help speed up developmenet
+just a collection of love2d libraries to help speed up development
 use if you want.
 
 W.I.P atm
