@@ -133,6 +133,10 @@ local function lerp(a,b,t)
     return a + t * (b - a)
 end
 
+interface.isColour = function(color)
+    return getmetatable(color) == meta
+end
+
 --#endregion
 --#region constructors
 
@@ -507,40 +511,56 @@ end
 --#endregion
 --#region metamethods
 
-meta.__add = function(self,other)
+---comment
+---@param self any
+---@param other any
+---@param callback fun(a : number, b : number): number
+---@param includealpha boolean?
+---@return colour
+local binary_op = function(self,other,callback,includealpha)
+
+    if(interface.isColour(self) or type(self) ~= "number") then
+        error(("tried to do operation between %s and %s"):format(type(self),type(other)))
+    end
+
+    if(interface.isColour(self) or type(self) ~= "number") then
+        error(("tried to do operation between %s and %s"):format(type(self),type(other)))
+    end
+
+    local colourA = interface.isColour(self) and self or interface.new(self,self,self,1)
+    local colourB = interface.isColour(other) and other or interface.new(other,other,other,1)
+
     return interface.new(
-        self.R + other.R,
-        self.G + other.G,
-        self.B + other.B,
-        self.A
+        callback(colourA.R,colourB.R),
+        callback(colourA.G,colourB.G),
+        callback(colourA.B,colourB.B),
+        includealpha and callback(colourA.A,colourB.A) or colourA
     )
+
+end
+
+meta.__add = function(self,other)
+    return binary_op(self,other,function(a,b)
+        return a + b
+    end)
 end
 
 meta.__sub = function(self,other)
-    return interface.new(
-        self.R - other.R,
-        self.G - other.G,
-        self.B - other.B,
-        self.A
-    )
+    return binary_op(self,other,function(a,b)
+        return a - b
+    end)
 end
 
 meta.__mul = function(self,other)
-    return interface.new(
-        self.R * other.R,
-        self.G * other.G,
-        self.B * other.B,
-        self.A * other.A
-    )
+    local colour = binary_op(self,other,function(a,b)
+        return a * b
+    end,true)
 end
 
 meta.__div = function(self,other)
-    return interface.new(
-        self.R / other.R,
-        self.G / other.G,
-        self.B / other.B,
-        self.A
-    )
+    local colour = binary_op(self,other,function(a,b)
+        return a / b
+    end)
 end
 
 meta.__call = function(self)
@@ -549,6 +569,120 @@ end
 
 
 --#endregion
+
+
+local pallete = {
+    WHITE = "#FFFFFF",
+    BLACK = "#000000",
+
+    RED = "#FF0000",
+    GREEN = "#00FF00",
+    BLUE = "#0000FF",
+    YELLOW = "#FFFF00",
+    MAGENTA = "#FF00FF",
+    CYAN = "#00FFFF",
+
+    CORNFLOWER_BLUE = "#6495ED",
+    CORAL_PINK = "#FF6163",
+
+    -- NORD pallete
+
+    POLAR_NIGHT0 = "#2e3440",
+    POLAR_NIGHT1 = "#3b4252",
+    POLAR_NIGHT2 = "#434c5e",
+    POLAR_NIGHT3 = "#4c566a",
+    
+    SNOW_STORM0 = "#d8dee9",
+    SNOW_STORM1 = "#e5e9f0",
+    SNOW_STORM2 = "#eceff4",
+
+    FROST0 = "#8fbcbb",
+    FROST1 = "#88c0d0",
+    FROST2 = "#81a1c1",
+    FROST3 = "#5e81ac",
+
+    AURORA0 = "#bf616a",
+    AURORA1 = "#d08770",
+    AURORA2 = "#ebcb8b",
+    AURORA3 = "#a3be8c",
+    AURORA4 = "#b48ead",
+
+    -- PICO 8 pallete
+
+    PIC0_BLACK       = "#000000",
+    PIC0_DARK_BLUE   = "#1D2B53",
+    PIC0_DARK_PURPLE = "#7E2553",
+    PIC0_DARK_GREEN  = "#008751",
+    PIC0_BROWN       = "#AB5236",
+    PIC0_DARK_GREY   = "#5F574F",
+    PIC0_light_GREY  = "#C2C3C7",
+
+    PIC0_WHITE  = "#FFF1E8",
+    PIC0_RED    = "#FF004D",
+    PIC0_ORANGE = "#FFA300",
+    PIC0_YELLOW = "#FFFF27",
+    PIC0_GREEN  = "#00E756",
+    PIC0_BLUE   = "#29ADFF",
+    PIC0_INDIGO = "#83769C",
+    PIC0_PINK   = "#FF77A8",
+    PIC0_PEACH  = "#FFCCAA",
+}
+
+--#region intellisense
+interface.WHITE = nil
+interface.BLACK = nil
+interface.RED = nil
+interface.GREEN = nil
+interface.BLUE = nil
+interface.YELLOW = nil
+interface.MAGENTA = nil
+interface.CYAN = nil
+interface.CORNFLOWER_BLUE = nil
+interface.CORAL_PINK = nil
+interface.POLAR_NIGHT0 = nil
+interface.POLAR_NIGHT1 = nil
+interface.POLAR_NIGHT2 = nil
+interface.POLAR_NIGHT3 = nil
+interface.SNOW_STORM0 = nil
+interface.SNOW_STORM1 = nil
+interface.SNOW_STORM2 = nil
+interface.FROST0 = nil
+interface.FROST1 = nil
+interface.FROST2 = nil
+interface.FROST3 = nil
+interface.AURORA0 = nil
+interface.AURORA1 = nil
+interface.AURORA2 = nil
+interface.AURORA3 = nil
+interface.AURORA4 = nil
+interface.PIC0_BLACK = nil
+interface.PIC0_DARK_BLUE = nil
+interface.PIC0_DARK_PURPLE = nil
+interface.PIC0_DARK_GREEN = nil
+interface.PIC0_BROWN = nil
+interface.PIC0_DARK_GREY = nil
+interface.PIC0_light_GREY = nil
+interface.PIC0_WHITE = nil
+interface.PIC0_RED = nil
+interface.PIC0_ORANGE = nil
+interface.PIC0_YELLOW = nil
+interface.PIC0_GREEN = nil
+interface.PIC0_BLUE = nil
+interface.PIC0_INDIGO = nil
+interface.PIC0_PINK = nil
+interface.PIC0_PEACH = nil
+
+--#endregion
+
+setmetatable(interface,{
+    __index = function (self, index)
+        if pallete[index] then
+            return interface.fromHex(pallete[index])
+        end
+
+        return rawget(self,index)
+    end
+})
 
 
 return interface
