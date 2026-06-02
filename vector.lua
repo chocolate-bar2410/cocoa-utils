@@ -95,6 +95,8 @@ end
 ---@param other vector
 ---@return number
 function schema:Angle(other)
+    if self.Magnitude * other.Magnitude == 0 then return 0 end
+
     return math.acos(self:Dot(other) / (self.Magnitude * other.Magnitude))
 end
 
@@ -227,7 +229,7 @@ meta.__eq = function (self,other)
 end
 
 meta.__le = function (self,other)
-    return self.X == other.X and self.Y == other.Y
+    return self.X <= other.X and self.Y <= other.Y
 end
 
 meta.__unm = function (self)
