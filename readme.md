@@ -1,4 +1,4 @@
-# library utilities
+# cocoa love2d utils
 
 just a collection of love2d libraries to help speed up developmenet
 use if you want.
