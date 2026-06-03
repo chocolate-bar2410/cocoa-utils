@@ -12,8 +12,6 @@ local schema = {}
 local easingFunctions = {}
 local easingDirections = {}
 
-
-
 local meta = {__index = schema}
 
 local lerp = function(a,b,t)
@@ -101,6 +99,18 @@ function schema:Update(deltatime)
     end
 
 end
+
+
+---resets tween
+---@param self tween
+function schema:Reset()
+    for index, value in pairs(self.TweenVariables) do
+        self.Target[index] = self.Origin[index]
+    end
+    self.Completed = false
+    self.Time = 0
+end
+
 
 easingFunctions = {
     ["Sine"] = function(t)
@@ -191,6 +201,7 @@ easingDirections = {
 ---@field TweenVariables table<string, any>
 ---@field EasingFunction fun(t : number): number
 ---@field Update fun(self : tween,deltatime : number): nil
+---@field Reset fun(self : tween): nil
 ---@field Origin T
 
 return interface
