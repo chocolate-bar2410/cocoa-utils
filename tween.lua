@@ -119,7 +119,7 @@ easingFunctions = {
     ["Quint"] = function(t)
         return t * t * t * t * t
     end,
-    ["Etpo"] = function(t)
+    ["Expo"] = function(t)
         return t == 0 and 0 or 2 ^ (10 * t - 10)
     end,
     ["Circ"] = function(t)
@@ -190,6 +190,7 @@ easingDirections = {
 ---@field Target T
 ---@field TweenVariables table<string, any>
 ---@field EasingFunction fun(t : number): number
+---@field Update fun(self : tween,deltatime : number): nil
 ---@field Origin T
 
 return interface
