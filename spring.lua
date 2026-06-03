@@ -45,6 +45,7 @@ local verletSchema = {}
 ---@field Damping number
 ---@field Stiffness number
 ---@field Update fun(self : verletSpring<T>, deltatime : number): nil
+
 local verletMeta = {__index = verletSchema}
 
 ---constructs new verlet spring

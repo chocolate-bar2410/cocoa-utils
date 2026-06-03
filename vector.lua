@@ -40,6 +40,7 @@ local interface = setmetatable({},{
 ---@field Reflect fun(self : vector,normal : vector) : vector
 ---@field Unpack fun(self : vector) : number,number
 ---@field Clone fun(self : vector) : vector
+
 local meta = {
     __index = function(self,index)
         if index == "Magnitude" then

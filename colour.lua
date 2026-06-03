@@ -34,6 +34,7 @@ local schema = {}
 ---@field Analogous fun(self : colour,layer : number): colour[]
 ---@field Triadic fun(self : colour): colour,colour
 ---@field SplitComplementary fun(self : colour): colour,colour
+
 local meta = {
     __index = schema,
     __tostring = function(self)
