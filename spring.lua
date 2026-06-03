@@ -23,17 +23,7 @@ local function clone(tab)
     end
     
 
-    if tab["Clone"] ~= nil or tab["clone"] ~= nil then
-        return (tab["Clone"] or tab["clone"])(tab)
-    end
-
-    local result = {}
-
-    for i,v in tab do
-        result[i] = v
-    end
-
-    return result
+    return (tab["Clone"] or tab["clone"])(tab)
 end
 
 local verletSchema = {}
@@ -80,8 +70,8 @@ function verletSchema:Update(deltatime)
     self.Position = self.Position + velocity + (acceleration * deltatime)
 end
 
-
 local eulerSchema = {}
+
 ---@generic T
 ---@class eulerSpring<T>
 ---@field Position T
@@ -91,10 +81,63 @@ local eulerSchema = {}
 ---@field K1 number
 ---@field K2 number
 ---@field K3 number
+---@field Frequency number
+---@field Damping number
+---@field Response number
 ---@field Update fun(self : eulerSpring<T>, deltatime : number): nil
+
 local eulerMeta = {
     __index = function(self,index)
+
+        if index == "Frequency" then
+            return 1 / (2 * math.pi * math.sqrt(self.K2))
+        end
+
+        if index == "Damping" then
+            return self.K1 / (2 * math.sqrt(self.K2))
+        end
+
+        if index == "Response" then
+            return 2 * self.K3 / self.K1
+        end        
+
         return eulerSchema[index]
+    end,
+
+    ---@param self eulerSpring
+    ---@param index any
+    ---@param value any
+    __newindex = function(self,index,value)
+        if index == "Frequency" then
+            local damping = self.K1 / (2 * math.sqrt(self.K2))
+            local response = 2 * self.K3 / self.K1
+
+            rawset(self,"K1",damping / (value * math.pi))
+            rawset(self,"K2",1 / ((2 * value * math.pi) ^ 2))
+            rawset(self,"K3",(response * damping) / (2 * value * math.pi))
+            return
+        end
+
+        if index == "Damping" then
+            local frequency = 1 / (2 * math.pi * math.sqrt(self.K2))
+            local response = 2 * self.K3 / self.K1
+
+            rawset(self,"K1",value / (frequency * math.pi))
+            rawset(self,"K2",1 / ((2 * frequency * math.pi) ^ 2))
+            rawset(self,"K3",(response * value) / (2 * frequency * math.pi))
+            return
+        end
+
+        if index == "Response" then
+            local frequency = 1 / (2 * math.pi * math.sqrt(self.K2))
+            local damping = self.K1 / (2 * math.sqrt(self.K2))
+
+            rawset(self,"K3",(value * damping) / (2 * frequency * math.pi))
+            return
+        end
+
+
+        rawset(self,index,value)
     end
 }
 
@@ -106,10 +149,10 @@ local eulerMeta = {
 ---@param damping number
 ---@param response number
 ---@return eulerSpring<T>
-interface.eulerSpring = function(goal,position,initvelocity,frequency,damping,response)
+interface.eulerSpring = function(goal,position,velocity_0,frequency,damping,response)
     local spring = {}
     spring.Position = position
-    spring.Velocity = initvelocity
+    spring.Velocity = velocity_0
 
     spring.Goal = goal
     spring.PreviousGoal = clone(goal)
@@ -117,6 +160,10 @@ interface.eulerSpring = function(goal,position,initvelocity,frequency,damping,re
     spring.K1 = damping / (frequency * math.pi)
     spring.K2 = 1 / ((2 * frequency * math.pi) ^ 2)
     spring.K3 = (response * damping) / (2 * frequency * math.pi)
+
+    spring.Frequency = nil
+    spring.Damping = nil
+    spring.Response = nil
 
     return setmetatable(spring,eulerMeta)
 end
@@ -132,9 +179,20 @@ function eulerSchema:Update(deltatime)
 
     self.Velocity = self.Velocity + (self.Goal + self.K3 * velocity - self.Position - self.K1 * self.Velocity) * deltatime / k2_stable
     self.Position = self.Position + self.Velocity * deltatime
-    
+
     self.PreviousGoal = clone(self.Goal)
 end
 
+interface.smoothDamp = function(goal,position,velocity_0)
+    return interface.eulerSpring(goal,position,velocity_0,1,1,0)
+end
+
+interface.stiff = function(goal,position,velocity_0)
+    return interface.eulerSpring(goal,position,velocity_0,7,0.4,0)
+end
+
+interface.bouncy = function(goal,position,velocity_0)
+    return interface.eulerSpring(goal,position,velocity_0,5,0.1,0)
+end
 
 return interface
