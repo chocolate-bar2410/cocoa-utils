@@ -54,7 +54,7 @@ interface.new = function(target,duration,tweenvariables,easingfunction)
     tween.Duration = duration
     tween.Target = target
     tween.TweenVariables = tweenvariables
-    tween.EasingFunction = easingfunction
+    tween._EasingFunction = easingfunction
 
     tween.Origin = clone(target)
 
@@ -87,12 +87,13 @@ end
 function schema:Update(deltatime)
     if self.Completed then return end
     self.Time = self.Time + deltatime
+    self.Time = math.min(self.Time,self.Duration)
 
     if self.Time >= self.Duration then
         self.Completed = true
     end
 
-    local eased_time = self.EasingFunction(self.Time / self.Duration)
+    local eased_time = self._EasingFunction(self.Time / self.Duration)
 
     for index, value in pairs(self.TweenVariables) do
         self.Target[index] = lerp(self.Origin[index],value,eased_time)
@@ -199,7 +200,7 @@ easingDirections = {
 ---@field Duration number
 ---@field Target T
 ---@field TweenVariables table<string, any>
----@field EasingFunction fun(t : number): number
+---@field _EasingFunction fun(t : number): number
 ---@field Update fun(self : tween,deltatime : number): nil
 ---@field Reset fun(self : tween): nil
 ---@field Origin T
