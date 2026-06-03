@@ -55,6 +55,7 @@ interface.new = function(target,duration,tweenvariables,easingfunction)
     tween.Target = target
     tween.TweenVariables = tweenvariables
     tween._EasingFunction = easingfunction
+    tween._OnComplete = nil
 
     tween.Origin = clone(target)
 
@@ -91,6 +92,7 @@ function schema:Update(deltatime)
 
     if self.Time >= self.Duration then
         self.Completed = true
+        if self._OnComplete then self._OnComplete() end
     end
 
     local eased_time = self._EasingFunction(self.Time / self.Duration)
@@ -101,7 +103,6 @@ function schema:Update(deltatime)
 
 end
 
-
 ---resets tween
 ---@param self tween
 function schema:Reset()
@@ -111,6 +112,16 @@ function schema:Reset()
     self.Completed = false
     self.Time = 0
 end
+
+---resets tween
+---@param self tween
+---@param callback fun(): nil
+function schema:OnComplete(callback)
+    self._OnComplete = callback
+
+    return self
+end
+
 
 
 easingFunctions = {
@@ -194,15 +205,17 @@ easingDirections = {
 ---@alias EasingStyle "Linear" | "Sine" | "Quad" | "Cubic" | "Quart" | "Quint" | "Expo" | "Circ" | "Back" | "Elastic" | "Bounce"
 
 ---@generic T
----@class tween
+---@class tween<T>
 ---@field Completed boolean
 ---@field Time number
 ---@field Duration number
 ---@field Target T
 ---@field TweenVariables table<string, any>
 ---@field _EasingFunction fun(t : number): number
+---@field _OnComplete fun(): nil
 ---@field Update fun(self : tween,deltatime : number): nil
 ---@field Reset fun(self : tween): nil
+---@field OnComplete fun(self : tween, callback : fun()): tween<T>
 ---@field Origin T
 
 return interface
