@@ -13,7 +13,7 @@ libraries:
     - traditional verlet spring solver (stiffness/damping)
     - artistic 2nd order spring solver (frequency/damping/response)
 - tween library
-    - 45 default easing functions
+    - 41 default easing functions
     - can use custom easing functions
 
 ## to use
