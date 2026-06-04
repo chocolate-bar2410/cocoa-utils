@@ -9,12 +9,12 @@ under the terms of the MIT license. See LICENSE for details.
 
 local interface = {}
 
-local function canClone(item)
+local function hasCloneMethod(item)
     if item["Clone"] ~= nil or item["clone"] ~= nil then
         return true
     end
 
-    return type(item) == "table"
+    return false
 end
 
 ---copies a object
@@ -27,12 +27,21 @@ local function clone(tab)
         return tab
     end
 
-    if not canClone(tab) then
-        error("spring input type must have clone method")
+    if hasCloneMethod(tab) then
+        return (tab["Clone"] or tab["clone"])(tab)
     end
     
+    local result = {}
 
-    return (tab["Clone"] or tab["clone"])(tab)
+    for i,v in pairs(tab) do
+        if type(v) == "table" then
+            result[i] = clone(v)
+        else
+            result[i] = v
+        end
+    end
+
+    return result
 end
 
 local verletSchema = {}
