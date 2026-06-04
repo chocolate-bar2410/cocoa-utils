@@ -49,7 +49,7 @@ end
 ---@return tween
 interface.new = function(target,duration,tweenvariables,easingfunction)
     local tween = {}
-    tween.Completed = false
+    tween.Playing = true
     tween.Time = 0
     tween.Duration = duration
     tween.Target = target
@@ -86,12 +86,12 @@ end
 ---@param self tween
 ---@param deltatime number
 function schema:Update(deltatime)
-    if self.Completed then return end
+    if not self.Playing then return end
     self.Time = self.Time + deltatime
     self.Time = math.min(self.Time,self.Duration)
 
     if self.Time >= self.Duration then
-        self.Completed = true
+        self.Playing = false
         if self._OnComplete then self._OnComplete() end
     end
 
@@ -109,7 +109,7 @@ function schema:Reset()
     for index, value in pairs(self.TweenVariables) do
         self.Target[index] = self.Origin[index]
     end
-    self.Completed = false
+    self.Playing = true
     self.Time = 0
 end
 
@@ -206,7 +206,7 @@ easingDirections = {
 
 ---@generic T
 ---@class tween<T>
----@field Completed boolean
+---@field Playing boolean
 ---@field Time number
 ---@field Duration number
 ---@field Target T
