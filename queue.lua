@@ -27,6 +27,8 @@ interface.new = function()
     queue.max = 0
     queue.data = {}
 
+    queue._OFFSET_THRESHOLD = 10
+
     return setmetatable(queue,meta)
 end
 
@@ -39,6 +41,11 @@ function schema:pop()
     local result = self.data[self.min]
     self.data[self.min] = nil
     self.min = self.min + 1
+
+    if self.min > self._OFFSET_THRESHOLD then
+        self:_compact()
+    end
+
 
     return result
 end
@@ -81,7 +88,7 @@ end
 ---compacts queue into a smaller size
 ---@generic T
 ---@param self queue<T>
-function schema:compact()
+function schema:_compact()
     if self:empty() then return end
     local size = self:size()
 
@@ -91,8 +98,6 @@ function schema:compact()
     end
     self.min = 1
     self.max = size
-
-    print(size)
 end
 
 ---@generic T
@@ -100,12 +105,13 @@ end
 ---@field min number
 ---@field max number
 ---@field data T[]
+---@field _OFFSET_THRESHOLD number
 ---@field push fun(self : queue<T>,data : T)
 ---@field pop fun(self : queue<T>): T?
 ---@field peek fun(self : queue<T>): T?
 ---@field size fun(self : queue<T>): number
 ---@field empty fun(self : queue<T>): boolean
----@field compact fun(self : queue<T>)
+---@field _compact fun(self : queue<T>)
 
 
 return interface
