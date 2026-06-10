@@ -15,6 +15,8 @@ libraries:
 - tween library
     - 41 default easing functions
     - can use custom easing functions
+- queue data structure
+    - a simple implementation for a queue
 
 ## to use
 simply pick the library you want to use and download it.
